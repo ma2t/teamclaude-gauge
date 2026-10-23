@@ -1,0 +1,8 @@
+{
+  "name": "teamclaude-gauge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "TZ=Europe/Paris node --test 'tests/*.test.js'"
+  }
+}
