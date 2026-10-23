@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- README images rendered from a fictional fleet (`tests/demo.js`, `tests/headless.sh demo assets`). Why: a real screenshot shows real account addresses.
+
 ## 3 (2026-10-23)
 
 ### Added

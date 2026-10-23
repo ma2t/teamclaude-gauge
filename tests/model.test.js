@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 import {ago, backIn, buildView, clockTime, level, percent} from '../extension/model.js';
+import {bucket, quotaOf} from './fleet.js';
 
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
@@ -44,8 +45,6 @@ const STATUS = {currentAccount: 'b@example.com', switchThreshold: 0.99, switchTh
 function account(name, use = {}, extra = {}) {
     const {five = 0, week = 0.5, fable = 0.5} = use;
     const resets = {five: NOW + 2 * HOUR, week: NOW + 30 * HOUR, fable: NOW + 30 * HOUR, ...use.resets};
-    const bucket = (utilization, resetAt) =>
-        utilization == null ? null : {utilization, remaining: 1 - utilization, resetAt};
     return {
         name,
         type: 'oauth',
@@ -58,26 +57,6 @@ function account(name, use = {}, extra = {}) {
             weeklyFable: bucket(fable, resets.fable),
         },
         ...extra,
-    };
-}
-
-// Mirrors teamclaude's aggregateBucket for the fields model.js reads.
-function quotaOf(accounts) {
-    const aggregate = key => {
-        const known = accounts.filter(a => a.buckets[key]);
-        if (known.length === 0)
-            return null;
-        const capacityWeight = known.reduce((sum, a) => sum + a.tier.weight, 0);
-        const usedWeight = known.reduce((sum, a) => sum + a.tier.weight * a.buckets[key].utilization, 0);
-        return {capacityWeight, usedWeight, utilization: usedWeight / capacityWeight, knownAccounts: known.length};
-    };
-    return {
-        accounts,
-        aggregate: {
-            fiveHour: aggregate('fiveHour'),
-            weeklyShared: aggregate('weeklyShared'),
-            weeklyFable: aggregate('weeklyFable'),
-        },
     };
 }
 

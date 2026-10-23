@@ -9,12 +9,15 @@
 #                                 screenshots in the dark and light theme
 #   tests/headless.sh live-load   the Shell starts without the extension;
 #                                 tools/live-load.sh loads it, then reloads it
+#   tests/headless.sh demo DIR    the README images: the fictional fleet of
+#                                 tests/demo.js at 2x scale, cropped to the menu
 set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
 here="$(realpath "$(dirname "$0")")"
 mode=${1:-load}
 script=
+monitor=1600x900
 
 work=$(mktemp -d)
 cleanup() {
@@ -37,6 +40,12 @@ case "$mode" in
         export TCG_SHOT_DIR="$(realpath "$2")"
         script="$here/shot.js"
         ;;
+    demo)
+        mkdir -p "${2:?usage: tests/headless.sh demo DIR}"
+        export TCG_SHOT_DIR="$(realpath "$2")"
+        script="$here/demo-shot.js"
+        monitor=2560x2880 # tall enough that the accounts grid does not scroll
+        ;;
     live-load)
         # An empty data dir hides the installed copy from the startup scan.
         mkdir "$work/data"
@@ -44,16 +53,21 @@ case "$mode" in
         script="$here/live-load.js"
         ;;
     *)
-        echo "usage: tests/headless.sh [shots DIR | live-load]" >&2
+        echo "usage: tests/headless.sh [shots DIR | live-load | demo DIR]" >&2
         exit 2
         ;;
 esac
 
-dbus-run-session -- bash -s "$uuid" "$work" "$script" "$mode" 2>>"$work/bus.log" <<'INNER'
-uuid=$1 work=$2 script=$3 mode=$4
+dbus-run-session -- bash -s "$uuid" "$work" "$script" "$mode" "$monitor" 2>>"$work/bus.log" <<'INNER'
+uuid=$1 work=$2 script=$3 mode=$4 monitor=$5
 gsettings set org.gnome.shell enabled-extensions "['$uuid']"
 gsettings set org.gnome.shell welcome-dialog-last-shown-version '999'
-gnome-shell --headless --wayland --no-x11 --virtual-monitor 1600x900 \
+if [[ "$mode" == demo ]]; then
+    gsettings set org.gnome.desktop.background picture-options 'none'
+    gsettings set org.gnome.desktop.background primary-color '#241f31'
+    gsettings set org.gnome.desktop.interface scaling-factor 2
+fi
+gnome-shell --headless --wayland --no-x11 --virtual-monitor "$monitor" \
     --wayland-display tcg-test ${script:+--automation-script "$script"} >"$work/shell.log" 2>&1 &
 shell=$!
 info=

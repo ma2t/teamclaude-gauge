@@ -2,6 +2,12 @@
 
 GNOME Shell 49 panel indicator for a local [teamclaude](https://github.com/KarpelesLab/teamclaude) proxy. It shows where the account fleet stands on the 5h window, the weekly window and the Fable weekly cap.
 
+<p align="center">
+  <img src="assets/menu.png" width="374" alt="Top bar label 'Fable 91% · 7d 55%' with the open menu: fleet bars for 5h, 7d and Fable, then the next three Fable resets">
+  <img src="assets/accounts.png" width="430" alt="Accounts grid: one tile per account with a Fable ring, 7d and 5h bars, and the come-back time of capped accounts">
+</p>
+<p align="center"><sub>A fictional fleet, from <code>tests/demo.js</code></sub></p>
+
 ## Panel
 
 A ring plus one short label. The first matching rule wins.
@@ -76,6 +82,7 @@ Without it, log out and back in. The same command loads an update: `git pull && 
 | `tests/headless.sh` | Loads the extension in a throwaway headless Shell, exit 0 when ACTIVE |
 | `tests/headless.sh shots DIR` | Same, and saves panel, menu and accounts screenshots (dark and light) to `DIR` |
 | `tests/headless.sh live-load` | Starts the Shell without the extension, loads it with `tools/live-load.sh`, then reloads it |
+| `tests/headless.sh demo assets` | Renders the fictional fleet of `tests/demo.js` and rewrites the README images |
 
 `tests/headless.sh shots DIR` shows a change before it reaches your session; `tools/live-load.sh` then puts it there.
 
