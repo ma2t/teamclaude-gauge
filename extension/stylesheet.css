@@ -7,7 +7,7 @@
     width: 16px;
     height: 16px;
     -tcg-ring-width: 3px;
-    -tcg-track-color: rgba(255, 255, 255, 0.25);
+    -tcg-track-color: rgba(127, 127, 127, 0.45);
 }
 
 /* Level colors: the ring arc reads `color`, bar fills read `background-color`. */
@@ -18,6 +18,12 @@
 .tcg-fill.tcg-ok { background-color: #57e389; }
 .tcg-fill.tcg-warn { background-color: #ffa348; }
 .tcg-fill.tcg-crit { background-color: #f66151; }
+
+/* Non-reactive menu items are :insensitive, which the theme greys out; these
+   rows are data, so they keep the menu's own text color. */
+.popup-menu-item.tcg-info:insensitive {
+    color: inherit;
+}
 
 .tcg-header,
 .tcg-current {

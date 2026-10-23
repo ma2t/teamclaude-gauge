@@ -36,7 +36,11 @@ function describe(error) {
 }
 
 function infoItem(child) {
-    const item = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+    const item = new PopupMenu.PopupBaseMenuItem({
+        reactive: false,
+        can_focus: false,
+        style_class: 'tcg-info',
+    });
     item.add_child(child);
     return item;
 }
@@ -170,7 +174,7 @@ class GaugeIndicator extends PanelMenu.Button {
     }
 
     _comesBackRow(row) {
-        const box = new St.BoxLayout({style_class: 'tcg-row'});
+        const box = new St.BoxLayout({style_class: 'tcg-row', x_expand: true});
         box.add_child(new St.Label({text: row.when, style_class: 'tcg-when'}));
         box.add_child(new St.Label({text: row.name, x_expand: true}));
         box.add_child(new St.Label({text: row.gain, style_class: 'tcg-percent'}));
@@ -178,7 +182,11 @@ class GaugeIndicator extends PanelMenu.Button {
     }
 
     _accountRow(account) {
-        const box = new St.BoxLayout({style_class: 'tcg-row', opacity: account.dim ? 128 : 255});
+        const box = new St.BoxLayout({
+            style_class: 'tcg-row',
+            x_expand: true,
+            opacity: account.dim ? 128 : 255,
+        });
         if (account.current)
             box.add_style_class_name('tcg-current');
         box.add_child(new St.Label({text: account.name, x_expand: true}));

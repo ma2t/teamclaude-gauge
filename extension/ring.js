@@ -3,7 +3,6 @@
 // foreground color of the CSS level class, so the palette lives in
 // stylesheet.css only.
 
-import Cairo from 'gi://cairo';
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
@@ -33,7 +32,6 @@ class GaugeRing extends St.DrawingArea {
 
         const cr = this.get_context();
         cr.setLineWidth(lineWidth);
-        cr.setLineCap(Cairo.LineCap.ROUND);
         cr.translate(width / 2, height / 2);
 
         cr.setSourceColor(node.get_color('-tcg-track-color'));
