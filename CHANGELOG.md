@@ -1,5 +1,11 @@
 # Changelog
 
+## 2 (2026-10-23)
+
+### Changed
+
+- Accounts submenu: a grid of tiles replaces the table. Each tile has a Fable ring with the % inside, 7d and 5h bars, and the come-back time when the account is capped. Why: the table needed reading row by row; the rings show at a glance which accounts still have Fable.
+
 ## 1 (2026-10-23)
 
 ### Added

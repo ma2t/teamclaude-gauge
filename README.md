@@ -24,7 +24,7 @@ A ring plus one short label. The first matching rule wins.
 | Header | Account count, current account |
 | Buckets | Bar, percent, next reset (or `back in ...` when capped) |
 | Next resets | At 90% or more: the 3 soonest account resets of that bucket, with the fleet share each one frees |
-| Accounts | Collapsed list: 5h, 7d, Fable per account; current in bold, inactive dimmed |
+| Accounts | Collapsed grid of tiles: a Fable ring per account, 7d and 5h bars, the come-back time when capped; current outlined, inactive dimmed |
 | Footer | Open dashboard, age of teamclaude's last quota probe |
 
 ## Data flow
@@ -72,5 +72,6 @@ The Shell reads extension code at login only. `tests/headless.sh DIR` shows a ch
 | Version | Date | Change |
 |---|---|---|
 | 1 | 2026-10-23 | First release |
+| 2 | 2026-10-23 | Accounts shown as ring tiles instead of a table |
 
 Last updated: 2026-10-23

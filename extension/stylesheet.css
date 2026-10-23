@@ -25,8 +25,7 @@
     color: inherit;
 }
 
-.tcg-header,
-.tcg-current {
+.tcg-header {
     font-weight: bold;
 }
 
@@ -51,8 +50,9 @@
 }
 
 .tcg-percent,
-.tcg-cell,
-.tcg-when {
+.tcg-when,
+.tcg-dial-text,
+.tcg-mini-label {
     font-feature-settings: "tnum";
 }
 
@@ -61,11 +61,66 @@
     text-align: right;
 }
 
-.tcg-cell {
-    min-width: 64px;
-    text-align: right;
-}
-
 .tcg-when {
     min-width: 80px;
+}
+
+.tcg-grid {
+    spacing: 8px;
+}
+
+.tcg-tile {
+    width: 112px;
+    padding: 10px 6px;
+    spacing: 4px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background-color: rgba(127, 127, 127, 0.12);
+}
+
+.tcg-tile-current {
+    border-color: -st-accent-color;
+}
+
+.tcg-ring.tcg-dial {
+    width: 40px;
+    height: 40px;
+    -tcg-ring-width: 4px;
+}
+
+.tcg-dial-text {
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.tcg-tile-name {
+    font-size: 0.85em;
+    text-align: center;
+}
+
+.tcg-mini-row {
+    spacing: 6px;
+}
+
+.tcg-mini-label {
+    font-size: 0.75em;
+    min-width: 16px;
+}
+
+.tcg-track.tcg-mini {
+    width: 64px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.tcg-mini .tcg-fill {
+    height: 4px;
+    border-radius: 2px;
+}
+
+/* Holds its line when empty so the tiles of a row stay aligned. */
+.tcg-tile-note {
+    font-size: 0.75em;
+    text-align: center;
+    min-height: 14px;
 }

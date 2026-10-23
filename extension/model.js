@@ -123,21 +123,51 @@ function comesBack(focus, aggregate, accounts, nowMs) {
     return {label: focus.capped ? `${focus.label} comes back` : `Next ${focus.label} resets`, rows};
 }
 
-function accountRows(accounts, current) {
-    const share = (account, key) => {
+function gauge(bucket) {
+    if (!bucket)
+        return {text: '-', fraction: 0, level: 'off'};
+    const fraction = clamp(bucket.utilization);
+    return {text: percent(fraction).slice(0, -1), fraction, level: level(fraction)};
+}
+
+// The ring shows Fable, so only another bucket's cap needs its label.
+function accountNote(account, status, nowMs) {
+    if (account.disabled)
+        return 'disabled';
+    if (!active(account))
+        return 'error';
+    for (const key of CAP_ORDER) {
+        const def = BUCKETS.find(b => b.key === key);
         const bucket = account.buckets?.[key];
-        return bucket ? percent(bucket.utilization) : '-';
-    };
+        if (bucket?.resetAt > nowMs && !usable(bucket, threshold(status, def.source), nowMs)) {
+            const prefix = key === 'weeklyFable' ? '' : `${def.label} `;
+            return `${prefix}back ${clockTime(bucket.resetAt, nowMs)}`;
+        }
+    }
+    return '';
+}
+
+// Most accounts here share one local part, so the domain tells them apart;
+// two accounts on one domain keep their full address.
+function shortName(name, accounts) {
+    const domain = name.split('@')[1];
+    const shared = accounts.filter(a => a.name.split('@')[1] === domain).length > 1;
+    return domain && !shared ? domain : name;
+}
+
+function accountRows(accounts, current, status, nowMs) {
     const fableUse = account => account.buckets?.weeklyFable?.utilization ?? 2; // unknown sorts last
     return [...accounts]
         .sort((x, y) => (y.name === current) - (x.name === current) || fableUse(x) - fableUse(y))
         .map(account => ({
             name: account.name,
+            short: shortName(account.name, accounts),
             current: account.name === current,
             dim: !active(account),
-            fiveHour: share(account, 'fiveHour'),
-            weekly: share(account, 'weeklyShared'),
-            fable: share(account, 'weeklyFable'),
+            fiveHour: gauge(account.buckets?.fiveHour),
+            weekly: gauge(account.buckets?.weeklyShared),
+            fable: gauge(account.buckets?.weeklyFable),
+            note: accountNote(account, status, nowMs),
         }));
 }
 
@@ -169,7 +199,7 @@ export function buildView(quota, status, nowMs) {
         header: {accounts: aggregate.weeklyShared?.knownAccounts ?? accounts.length, current},
         buckets,
         comesBack: comesBack(focus, aggregate, accounts, nowMs),
-        accounts: accountRows(accounts, current),
+        accounts: accountRows(accounts, current, status, nowMs),
         footer: Number.isFinite(probedAt) ? `Probed ${ago(nowMs - probedAt)}` : null,
     };
 }

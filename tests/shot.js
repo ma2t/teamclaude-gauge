@@ -1,5 +1,5 @@
 // Automation script for tests/headless.sh: screenshots the panel, the open
-// menu, the accounts submenu, then the menu in the light theme, into
+// menu and the accounts submenu, in the dark then the light theme, into
 // $TCG_SHOT_DIR. The Shell exits on its own when run() returns.
 
 import Gio from 'gi://Gio';
@@ -41,4 +41,8 @@ export async function run() {
     indicator.menu.open(false);
     await Scripting.sleep(1000);
     await shot('menu-light.png');
+
+    indicator._accounts.setSubmenuShown(true);
+    await Scripting.sleep(1000);
+    await shot('accounts-light.png');
 }

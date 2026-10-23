@@ -9,8 +9,8 @@ import St from 'gi://St';
 
 export const GaugeRing = GObject.registerClass(
 class GaugeRing extends St.DrawingArea {
-    _init() {
-        super._init({style_class: 'tcg-ring tcg-off', y_align: Clutter.ActorAlign.CENTER});
+    _init(styleClass = '') {
+        super._init({style_class: `tcg-ring ${styleClass} tcg-off`, y_align: Clutter.ActorAlign.CENTER});
         this._fraction = 0;
         this._level = 'off';
     }

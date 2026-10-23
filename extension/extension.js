@@ -23,6 +23,8 @@ const BASE_URL = 'http://127.0.0.1:3456/teamclaude';
 const POLL_SECONDS = 30;
 const TIMEOUT_SECONDS = 3;
 const BAR_WIDTH = 96; // matches .tcg-track width
+const MINI_WIDTH = 64; // matches .tcg-track.tcg-mini width
+const TILES_PER_ROW = 3;
 const DIM = 160;
 
 function describe(error) {
@@ -33,6 +35,14 @@ function describe(error) {
     if (error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.TIMED_OUT))
         return 'proxy not answering';
     return error.message;
+}
+
+function bar(fraction, level, width, styleClass = '') {
+    const track = new St.Widget({style_class: `tcg-track ${styleClass}`, y_align: Clutter.ActorAlign.CENTER});
+    const fill = new St.Widget({style_class: `tcg-fill tcg-${level}`});
+    fill.set_style(`width: ${Math.round(fraction * width)}px;`);
+    track.add_child(fill);
+    return track;
 }
 
 function infoItem(child) {
@@ -152,8 +162,8 @@ class GaugeIndicator extends PanelMenu.Button {
         this._accounts.visible = view.accounts.length > 0;
         this._accounts.label.text = `Accounts (${view.accounts.length})`;
         this._accounts.menu.removeAll();
-        for (const account of view.accounts)
-            this._accounts.menu.addMenuItem(this._accountRow(account));
+        if (view.accounts.length > 0)
+            this._accounts.menu.addMenuItem(infoItem(this._accountGrid(view.accounts)));
 
         this._dashboard.visible = view.state === 'ok';
         this._footer.text = view.state === 'off' ? 'Run: teamclaude service status' : view.footer ?? '';
@@ -162,12 +172,8 @@ class GaugeIndicator extends PanelMenu.Button {
 
     _bucketRow(bucket) {
         const box = new St.BoxLayout({style_class: 'tcg-row'});
-        const track = new St.Widget({style_class: 'tcg-track', y_align: Clutter.ActorAlign.CENTER});
-        const fill = new St.Widget({style_class: `tcg-fill tcg-${bucket.level}`});
-        fill.set_style(`width: ${Math.round(bucket.fraction * BAR_WIDTH)}px;`);
-        track.add_child(fill);
         box.add_child(new St.Label({text: bucket.label, style_class: 'tcg-bucket'}));
-        box.add_child(track);
+        box.add_child(bar(bucket.fraction, bucket.level, BAR_WIDTH));
         box.add_child(new St.Label({text: bucket.percent, style_class: 'tcg-percent'}));
         box.add_child(new St.Label({text: bucket.note, opacity: DIM}));
         return infoItem(box);
@@ -181,18 +187,45 @@ class GaugeIndicator extends PanelMenu.Button {
         return infoItem(box);
     }
 
-    _accountRow(account) {
-        const box = new St.BoxLayout({
-            style_class: 'tcg-row',
-            x_expand: true,
+    _accountGrid(accounts) {
+        const grid = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'tcg-grid'});
+        for (let i = 0; i < accounts.length; i += TILES_PER_ROW) {
+            const row = new St.BoxLayout({style_class: 'tcg-grid'});
+            for (const account of accounts.slice(i, i + TILES_PER_ROW))
+                row.add_child(this._accountTile(account));
+            grid.add_child(row);
+        }
+        return grid;
+    }
+
+    _accountTile(account) {
+        const tile = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: account.current ? 'tcg-tile tcg-tile-current' : 'tcg-tile',
             opacity: account.dim ? 128 : 255,
         });
-        if (account.current)
-            box.add_style_class_name('tcg-current');
-        box.add_child(new St.Label({text: account.name, x_expand: true}));
-        for (const [label, value] of [['5h', account.fiveHour], ['7d', account.weekly], ['F', account.fable]])
-            box.add_child(new St.Label({text: `${label} ${value}`, style_class: 'tcg-cell'}));
-        return infoItem(box);
+
+        const dial = new St.Widget({layout_manager: new Clutter.BinLayout(), x_align: Clutter.ActorAlign.CENTER});
+        const ring = new GaugeRing('tcg-dial');
+        ring.update(account.fable.fraction, account.fable.level);
+        dial.add_child(ring);
+        dial.add_child(new St.Label({
+            text: account.fable.text,
+            style_class: 'tcg-dial-text',
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        }));
+        tile.add_child(dial);
+        tile.add_child(new St.Label({text: account.short, style_class: 'tcg-tile-name'}));
+
+        for (const [label, gauge] of [['7d', account.weekly], ['5h', account.fiveHour]]) {
+            const line = new St.BoxLayout({style_class: 'tcg-mini-row', x_align: Clutter.ActorAlign.CENTER});
+            line.add_child(new St.Label({text: label, style_class: 'tcg-mini-label'}));
+            line.add_child(bar(gauge.fraction, gauge.level, MINI_WIDTH, 'tcg-mini'));
+            tile.add_child(line);
+        }
+        tile.add_child(new St.Label({text: account.note, style_class: 'tcg-tile-note', opacity: DIM}));
+        return tile;
     }
 
     destroy() {

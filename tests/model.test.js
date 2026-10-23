@@ -192,7 +192,52 @@ test('accounts: current first, then most Fable headroom, inactive dimmed', () =>
     assert.deepEqual(rows.map(r => r.name), ['b@example.com', 'c@example.com', 'a@example.com', 'd@example.com']);
     assert.deepEqual(rows.map(r => r.dim), [false, true, false, false]);
     assert.equal(rows[0].current, true);
-    assert.equal(rows[3].fable, '-');
+});
+
+test('account gauges carry the whole percent, fill and level of each bucket', () => {
+    const quota = quotaOf([
+        account('a@example.com', {five: 0.35, week: 0.72, fable: 0.99}),
+        account('b@example.com', {fable: null}),
+    ]);
+    const [b, a] = buildView(quota, STATUS, NOW).accounts;
+    assert.deepEqual(a.fable, {text: '99', fraction: 0.99, level: 'crit'});
+    assert.deepEqual(a.weekly, {text: '72', fraction: 0.72, level: 'warn'});
+    assert.deepEqual(a.fiveHour, {text: '35', fraction: 0.35, level: 'ok'});
+    assert.deepEqual(b.fable, {text: '-', fraction: 0, level: 'off'});
+});
+
+test('short names: the domain when unique, the full address when shared', () => {
+    const quota = quotaOf([
+        account('me@example.org'),
+        account('x@example.com'),
+        account('y@example.com'),
+        account('api-key'),
+    ]);
+    const shorts = Object.fromEntries(buildView(quota, STATUS, NOW).accounts.map(r => [r.name, r.short]));
+    assert.deepEqual(shorts, {
+        'me@example.org': 'example.org',
+        'x@example.com': 'x@example.com',
+        'y@example.com': 'y@example.com',
+        'api-key': 'api-key',
+    });
+});
+
+test('account notes: Fable cap, blocking cap, inactive state', () => {
+    const quota = quotaOf([
+        account('a@example.com', {fable: 1, resets: {fable: NOW + HOUR}}),
+        account('b@example.com', {week: 0.99, fable: 1}),
+        account('c@example.com', {}, {disabled: true}),
+        account('d@example.com', {}, {status: 'error'}),
+        account('e@example.com'),
+    ]);
+    const notes = Object.fromEntries(buildView(quota, STATUS, NOW).accounts.map(r => [r.name, r.note]));
+    assert.deepEqual(notes, {
+        'a@example.com': 'back 18:11',
+        'b@example.com': '7d back Sat 23:11',
+        'c@example.com': 'disabled',
+        'd@example.com': 'error',
+        'e@example.com': '',
+    });
 });
 
 test('header counts accounts and names the current one; footer shows probe age', () => {

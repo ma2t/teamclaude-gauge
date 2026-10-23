@@ -4,8 +4,8 @@
 # the Shell reports the extension ACTIVE.
 #
 # Usage: tests/headless.sh [SHOT_DIR]
-# With SHOT_DIR, tests/shot.js also writes panel.png, menu.png and
-# accounts.png there.
+# With SHOT_DIR, tests/shot.js also writes panel, menu and accounts
+# screenshots there, in the dark and the light theme.
 set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
