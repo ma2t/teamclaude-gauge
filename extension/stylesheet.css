@@ -1,0 +1,65 @@
+.tcg-panel-label {
+    font-feature-settings: "tnum";
+    padding-left: 4px;
+}
+
+.tcg-ring {
+    width: 16px;
+    height: 16px;
+    -tcg-ring-width: 3px;
+    -tcg-track-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Level colors: the ring arc reads `color`, bar fills read `background-color`. */
+.tcg-ok { color: #57e389; }
+.tcg-warn { color: #ffa348; }
+.tcg-crit { color: #f66151; }
+.tcg-off { color: #9a9996; }
+.tcg-fill.tcg-ok { background-color: #57e389; }
+.tcg-fill.tcg-warn { background-color: #ffa348; }
+.tcg-fill.tcg-crit { background-color: #f66151; }
+
+.tcg-header,
+.tcg-current {
+    font-weight: bold;
+}
+
+.tcg-row {
+    spacing: 12px;
+}
+
+.tcg-bucket {
+    min-width: 40px;
+}
+
+.tcg-track {
+    width: 96px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(127, 127, 127, 0.25);
+}
+
+.tcg-fill {
+    height: 6px;
+    border-radius: 3px;
+}
+
+.tcg-percent,
+.tcg-cell,
+.tcg-when {
+    font-feature-settings: "tnum";
+}
+
+.tcg-percent {
+    min-width: 40px;
+    text-align: right;
+}
+
+.tcg-cell {
+    min-width: 64px;
+    text-align: right;
+}
+
+.tcg-when {
+    min-width: 80px;
+}
