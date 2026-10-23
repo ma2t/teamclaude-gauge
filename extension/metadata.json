@@ -3,6 +3,6 @@
   "name": "TeamClaude Gauge",
   "description": "Shows where a local teamclaude fleet stands on its 5h window, weekly window and Fable weekly cap.",
   "shell-version": ["49"],
-  "url": "",
+  "url": "https://github.com/ma2t/teamclaude-gauge",
   "version": 3
 }

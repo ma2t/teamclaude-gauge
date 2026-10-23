@@ -94,4 +94,8 @@ Without it, log out and back in. The same command loads an update: `git pull && 
 | 2 | 2026-10-23 | Accounts shown as ring tiles instead of a table |
 | 3 | 2026-10-23 | Loads and reloads in a running Shell (`tools/live-load.sh`) |
 
-Last updated: 2026-10-23
+Last updated: 2026-10-24
+
+## License
+
+GPL-2.0-or-later, see [LICENSE](LICENSE).

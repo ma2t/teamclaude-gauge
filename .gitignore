@@ -1,3 +1,6 @@
 node_modules/
 *.zip
 .worktrees/
+# Local only: kept off the public repo (Matthieu, 2026-10-24)
+CLAUDE.md
+docs/
