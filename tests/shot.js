@@ -11,6 +11,8 @@ import * as Scripting from 'resource:///org/gnome/shell/ui/scripting.js';
 
 Gio._promisify(Shell.Screenshot.prototype, 'screenshot');
 
+const UUID = 'teamclaude-gauge@ma2t.github.io';
+
 export const METRICS = {};
 
 async function shot(name) {
@@ -25,12 +27,13 @@ export async function run() {
     await Scripting.sleep(3000); // first poll of the proxy
     await shot('panel.png');
 
-    const indicator = Main.panel.statusArea['teamclaude-gauge@ma2t.github.io'];
+    const indicator = Main.panel.statusArea[UUID];
+    const accounts = Main.extensionManager.lookup(UUID).stateObj._indicator._accounts;
     indicator.menu.open(false);
     await Scripting.sleep(1000); // the refresh on open re-renders the menu
     await shot('menu.png');
 
-    indicator._accounts.setSubmenuShown(true);
+    accounts.setSubmenuShown(true);
     await Scripting.sleep(1000);
     await shot('accounts.png');
 
@@ -42,7 +45,7 @@ export async function run() {
     await Scripting.sleep(1000);
     await shot('menu-light.png');
 
-    indicator._accounts.setSubmenuShown(true);
+    accounts.setSubmenuShown(true);
     await Scripting.sleep(1000);
     await shot('accounts-light.png');
 }

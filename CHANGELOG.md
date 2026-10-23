@@ -1,5 +1,16 @@
 # Changelog
 
+## 3 (2026-10-23)
+
+### Added
+
+- `tools/live-load.sh`: loads the extension, or a newer copy of it, into the running Shell through Looking Glass. Why: on Wayland a new or changed extension otherwise needs a logout.
+- `tests/headless.sh live-load`: checks a first load and a reload in a running headless Shell.
+
+### Changed
+
+- The indicator and the ring are plain classes around Shell widgets, no longer GObject subclasses. Why: a GType name cannot be registered twice, so a reload failed with "already registered".
+
 ## 2 (2026-10-23)
 
 ### Changed

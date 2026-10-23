@@ -4,7 +4,6 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
@@ -55,10 +54,13 @@ function infoItem(child) {
     return item;
 }
 
-const GaugeIndicator = GObject.registerClass(
-class GaugeIndicator extends PanelMenu.Button {
-    _init() {
-        super._init(0.0, 'TeamClaude Gauge');
+// A plain class around PanelMenu.Button, not a GObject subclass, for the same
+// reason as GaugeRing: a reload must not register a GType name twice.
+class GaugeIndicator {
+    constructor() {
+        this.button = new PanelMenu.Button(0.0, 'TeamClaude Gauge');
+        this.menu = this.button.menu;
+        this.button.connect('destroy', () => this._onDestroy());
 
         const box = new St.BoxLayout({style_class: 'panel-status-menu-box'});
         this._ring = new GaugeRing();
@@ -67,9 +69,9 @@ class GaugeIndicator extends PanelMenu.Button {
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'tcg-panel-label',
         });
-        box.add_child(this._ring);
+        box.add_child(this._ring.actor);
         box.add_child(this._label);
-        this.add_child(box);
+        this.button.add_child(box);
         this._buildMenu();
 
         this._session = new Soup.Session({timeout: TIMEOUT_SECONDS});
@@ -208,7 +210,7 @@ class GaugeIndicator extends PanelMenu.Button {
         const dial = new St.Widget({layout_manager: new Clutter.BinLayout(), x_align: Clutter.ActorAlign.CENTER});
         const ring = new GaugeRing('tcg-dial');
         ring.update(account.fable.fraction, account.fable.level);
-        dial.add_child(ring);
+        dial.add_child(ring.actor);
         dial.add_child(new St.Label({
             text: account.fable.text,
             style_class: 'tcg-dial-text',
@@ -228,22 +230,21 @@ class GaugeIndicator extends PanelMenu.Button {
         return tile;
     }
 
-    destroy() {
+    _onDestroy() {
         GLib.Source.remove(this._timer);
         this._cancellable.cancel();
         this._session.abort();
-        super.destroy();
     }
-});
+}
 
 export default class TeamClaudeGaugeExtension extends Extension {
     enable() {
         this._indicator = new GaugeIndicator();
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        Main.panel.addToStatusArea(this.uuid, this._indicator.button);
     }
 
     disable() {
-        this._indicator?.destroy();
+        this._indicator?.button.destroy();
         this._indicator = null;
     }
 }

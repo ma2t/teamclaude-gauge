@@ -4,5 +4,5 @@
   "description": "Shows where a local teamclaude fleet stands on its 5h window, weekly window and Fable weekly cap.",
   "shell-version": ["49"],
   "url": "",
-  "version": 2
+  "version": 3
 }

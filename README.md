@@ -45,10 +45,28 @@ Both calls are local and read-only. The extension sends nothing anywhere else.
 Requires GNOME Shell 49 and the teamclaude service (`teamclaude service install`).
 
 ```bash
-./install.sh   # symlinks extension/ and enables it
+./install.sh          # symlinks extension/ and enables it
+tools/live-load.sh    # optional: load it now, without a logout
 ```
 
-On Wayland, log out and back in to load it.
+`tools/live-load.sh` copies a one-line command to the clipboard. Paste it in Looking Glass, the Shell's JS console:
+
+```mermaid
+flowchart LR
+  A[tools/live-load.sh] --> B[Alt+F2, type lg, Enter]
+  B --> C[Ctrl+V, Enter]
+  C --> D{result line}
+  D -->|loaded| E[Escape]
+  D -->|failed: ...| F[log out and back in]
+```
+
+Without it, log out and back in. The same command loads an update: `git pull && tools/live-load.sh`.
+
+| Case | Without logout? | Why |
+|---|---|---|
+| First install from this repo | Yes, with `tools/live-load.sh` | The Shell scans extension folders at login only. Looking Glass can load one later |
+| Update of a running copy | Yes, with `tools/live-load.sh` | The Shell caches a module by path; the tool loads a fresh snapshot from a new path |
+| Plain `gnome-extensions install` | No | Only extensions.gnome.org installs load live |
 
 ## Develop
 
@@ -56,9 +74,10 @@ On Wayland, log out and back in to load it.
 |---|---|
 | `npm test` | `model.js` unit tests, plus a read-only smoke test against the running proxy (skips when it is down) |
 | `tests/headless.sh` | Loads the extension in a throwaway headless Shell, exit 0 when ACTIVE |
-| `tests/headless.sh DIR` | Same, and saves panel and menu screenshots (dark and light) to `DIR` |
+| `tests/headless.sh shots DIR` | Same, and saves panel, menu and accounts screenshots (dark and light) to `DIR` |
+| `tests/headless.sh live-load` | Starts the Shell without the extension, loads it with `tools/live-load.sh`, then reloads it |
 
-The Shell reads extension code at login only. `tests/headless.sh DIR` shows a change without a re-login.
+`tests/headless.sh shots DIR` shows a change before it reaches your session; `tools/live-load.sh` then puts it there.
 
 | Path | Role |
 |---|---|
@@ -73,5 +92,6 @@ The Shell reads extension code at login only. `tests/headless.sh DIR` shows a ch
 |---|---|---|
 | 1 | 2026-10-23 | First release |
 | 2 | 2026-10-23 | Accounts shown as ring tiles instead of a table |
+| 3 | 2026-10-23 | Loads and reloads in a running Shell (`tools/live-load.sh`) |
 
 Last updated: 2026-10-23
