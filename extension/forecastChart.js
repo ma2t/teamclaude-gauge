@@ -13,7 +13,7 @@ const MARGIN = 16;
 const LABEL_MIN = 96;
 const LABEL_MAX = 240;
 const CELLS = 448;
-const RESET = 88;
+const RESET_MIN = 88;
 const AXIS = 24;
 const ROW = 22;
 const BAR = 12;
@@ -33,24 +33,34 @@ export const THEMES = {
 
 const CELL_COLOR = {out: 'red', weak: 'amber', strong: 'green'};
 
+// Widest pixel width of the strings, in the chart font.
+function widest(strings) {
+    const layout = Pango.Layout.new(PangoCairo.FontMap.get_default().create_context());
+    layout.set_font_description(FONT);
+    return Math.max(0, ...strings.map(value => {
+        layout.set_text(value, -1);
+        return layout.get_pixel_size()[0];
+    }));
+}
+
 // Wide enough for the longest label, up to LABEL_MAX; a longer one loses
 // its middle, so both the name and the domain stay readable. The measure
 // and the drawing can round apart by a pixel: 4 px of slack.
 function labelWidth(forecast) {
-    const layout = Pango.Layout.new(PangoCairo.FontMap.get_default().create_context());
-    layout.set_font_description(FONT);
-    const widths = forecast.accounts.map(account => {
-        layout.set_text(account.short, -1);
-        return layout.get_pixel_size()[0];
-    });
-    return Math.min(LABEL_MAX, Math.max(LABEL_MIN, ...widths) + 16);
+    return Math.min(LABEL_MAX, Math.max(LABEL_MIN, widest(forecast.accounts.map(a => a.short))) + 16);
+}
+
+// The reset column holds "7d back Wed 23:11" for a capped account, wider
+// than a plain reset time: 8 px gap, the text, 4 px of slack.
+function resetWidth(forecast) {
+    return Math.max(RESET_MIN, widest(forecast.accounts.map(a => resetText(a, forecast.now))) + 12);
 }
 
 export function chartSize(forecast) {
     const {rows, more} = changeRows(forecast);
     const lines = rows.length + (more > 0 ? 1 : 0) + 1;
     return [
-        2 * MARGIN + labelWidth(forecast) + CELLS + RESET,
+        2 * MARGIN + labelWidth(forecast) + CELLS + resetWidth(forecast),
         2 * MARGIN + AXIS + (forecast.accounts.length + 1) * ROW + GAP + lines * ROW,
     ];
 }
@@ -125,7 +135,7 @@ export function drawForecast(cr, forecast, theme) {
     box(cr, nowX - 0.75, top - 4, 1.5, bottom - top + 4, theme.fg, 0.8);
 
     const {rows, more} = changeRows(forecast);
-    const accountsWidth = label + CELLS + RESET - FIELDS[3];
+    const accountsWidth = label + CELLS + resetWidth(forecast) - FIELDS[3];
     rows.forEach((row, i) => {
         const y = bottom + GAP + i * ROW;
         text(cr, row.prefix, MARGIN + FIELDS[0], y, theme.fg);
