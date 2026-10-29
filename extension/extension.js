@@ -5,7 +5,6 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -13,28 +12,15 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import {BASE_URL, describe, getFleet, getJson, newSession} from './api.js';
 import {buildView, offView} from './model.js';
 import {GaugeRing} from './ring.js';
 
-Gio._promisify(Soup.Session.prototype, 'send_and_read_async');
-
-const BASE_URL = 'http://127.0.0.1:3456/teamclaude';
 const POLL_SECONDS = 30;
-const TIMEOUT_SECONDS = 3;
 const BAR_WIDTH = 96; // matches .tcg-track width
 const MINI_WIDTH = 64; // matches .tcg-track.tcg-mini width
 const TILES_PER_ROW = 3;
 const DIM = 160;
-
-function describe(error) {
-    if (error instanceof SyntaxError)
-        return 'unexpected response';
-    if (error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CONNECTION_REFUSED))
-        return 'proxy not running on :3456';
-    if (error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.TIMED_OUT))
-        return 'proxy not answering';
-    return error.message;
-}
 
 function bar(fraction, level, width, styleClass = '') {
     const track = new St.Widget({style_class: `tcg-track ${styleClass}`, y_align: Clutter.ActorAlign.CENTER});
@@ -74,7 +60,7 @@ class GaugeIndicator {
         this.button.add_child(box);
         this._buildMenu();
 
-        this._session = new Soup.Session({timeout: TIMEOUT_SECONDS});
+        this._session = newSession();
         this._cancellable = new Gio.Cancellable();
         this._busy = false;
         this._lastError = null;
@@ -106,13 +92,9 @@ class GaugeIndicator {
         });
     }
 
-    async _getJson(path) {
-        const message = Soup.Message.new('GET', `${BASE_URL}/${path}`);
-        const bytes = await this._session.send_and_read_async(
-            message, GLib.PRIORITY_DEFAULT, this._cancellable);
-        if (message.get_status() !== Soup.Status.OK)
-            throw new Error(`HTTP ${message.get_status()}`);
-        return JSON.parse(new TextDecoder().decode(bytes.get_data()));
+    // tests/demo-shot.js replaces this method to feed the fictional fleet.
+    _getJson(path) {
+        return getJson(this._session, path, this._cancellable);
     }
 
     async _refresh() {
@@ -121,12 +103,7 @@ class GaugeIndicator {
         this._busy = true;
         let view;
         try {
-            // /status only adds the current account, thresholds and probe age;
-            // the gauge still works from /quota alone.
-            const [quota, status] = await Promise.all([
-                this._getJson('quota'),
-                this._getJson('status').catch(() => null),
-            ]);
+            const [quota, status] = await getFleet(path => this._getJson(path));
             view = buildView(quota, status, Date.now());
         } catch (error) {
             view = offView(describe(error));
