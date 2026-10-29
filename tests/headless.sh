@@ -12,6 +12,8 @@
 #   tests/headless.sh demo DIR    the README images: the fictional fleet of
 #                                 tests/demo.js at 2x scale, cropped to the menu,
 #                                 plus its forecast chart
+#   tests/headless.sh window DIR  opens the forecast window from the menu item
+#                                 and screenshots it, dark then light
 set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
@@ -56,12 +58,17 @@ case "$mode" in
         monitor=2560x2880 # tall enough that the accounts grid does not scroll
         gjs -m "$here/forecast-shot.js" "$TCG_SHOT_DIR" dark
         ;;
+    window)
+        mkdir -p "${2:?usage: tests/headless.sh window DIR}"
+        export TCG_SHOT_DIR="$(realpath "$2")" TCG_RESULT="$work/result"
+        script="$here/window-shot.js"
+        ;;
     live-load)
         export TCG_RESULT="$work/result" TCG_REPO="$(dirname "$here")"
         script="$here/live-load.js"
         ;;
     *)
-        echo "usage: tests/headless.sh [shots DIR | live-load | demo DIR]" >&2
+        echo "usage: tests/headless.sh [shots DIR | live-load | demo DIR | window DIR]" >&2
         exit 2
         ;;
 esac
@@ -103,6 +110,9 @@ grep -iE "teamclaude|JS ERROR|Script failed" "$work/shell.log" || true
 if [[ "$mode" == live-load ]]; then
     cat "$work/result" 2>/dev/null
     printf 'before: absent\nfirst: loaded\nreload: loaded\nfresh: true\n' | cmp -s - "$work/result"
+elif [[ "$mode" == window ]]; then
+    cat "$work/result" 2>/dev/null
+    grep -qx 'window: present' "$work/result"
 else
     echo "$info"
     [[ "$info" == *"'state': <1.0>"* ]]

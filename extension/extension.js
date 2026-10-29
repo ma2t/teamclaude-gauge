@@ -12,7 +12,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {BASE_URL, describe, getFleet, getJson, newSession} from './api.js';
+import {BASE_URL, FORECAST_APP_ID, describe, getFleet, getJson, newSession} from './api.js';
 import {buildView, offView} from './model.js';
 import {GaugeRing} from './ring.js';
 
@@ -43,7 +43,8 @@ function infoItem(child) {
 // A plain class around PanelMenu.Button, not a GObject subclass, for the same
 // reason as GaugeRing: a reload must not register a GType name twice.
 class GaugeIndicator {
-    constructor() {
+    constructor(path) {
+        this._path = path;
         this.button = new PanelMenu.Button(0.0, 'TeamClaude Gauge');
         this.menu = this.button.menu;
         this.button.connect('destroy', () => this._onDestroy());
@@ -78,6 +79,9 @@ class GaugeIndicator {
         this.menu.addMenuItem(this._body);
         this._accounts = new PopupMenu.PopupSubMenuMenuItem('Accounts');
         this.menu.addMenuItem(this._accounts);
+        this._forecast = new PopupMenu.PopupMenuItem('Fable forecast');
+        this._forecast.connect('activate', () => this._openForecast());
+        this.menu.addMenuItem(this._forecast);
         this._dashboard = new PopupMenu.PopupMenuItem('Open dashboard');
         this._dashboard.connect('activate', () =>
             Gio.AppInfo.launch_default_for_uri(`${BASE_URL}/dashboard`, null));
@@ -95,6 +99,23 @@ class GaugeIndicator {
     // tests/demo-shot.js replaces this method to feed the fictional fleet.
     _getJson(path) {
         return getJson(this._session, path, this._cancellable);
+    }
+
+    // Its own process: a GTK app cannot run inside the Shell. Wayland lets
+    // only the Shell raise a window, so an open one is activated here.
+    _openForecast() {
+        const open = global.get_window_actors().map(actor => actor.meta_window)
+            .find(window => window.get_wm_class() === FORECAST_APP_ID);
+        if (open) {
+            Main.activateWindow(open);
+            return;
+        }
+        const script = GLib.build_filenamev([this._path, 'forecastWindow.js']);
+        try {
+            Gio.Subprocess.new(['gjs', '-m', script], Gio.SubprocessFlags.NONE);
+        } catch (error) {
+            console.warn(`TeamClaude Gauge: forecast window: ${error.message}`);
+        }
     }
 
     async _refresh() {
@@ -144,6 +165,7 @@ class GaugeIndicator {
         if (view.accounts.length > 0)
             this._accounts.menu.addMenuItem(infoItem(this._accountGrid(view.accounts)));
 
+        this._forecast.visible = view.state === 'ok';
         this._dashboard.visible = view.state === 'ok';
         this._footer.text = view.state === 'off' ? 'Run: teamclaude service status' : view.footer ?? '';
         this._footerItem.visible = this._footer.text !== '';
@@ -216,7 +238,7 @@ class GaugeIndicator {
 
 export default class TeamClaudeGaugeExtension extends Extension {
     enable() {
-        this._indicator = new GaugeIndicator();
+        this._indicator = new GaugeIndicator(this.path);
         Main.panel.addToStatusArea(this.uuid, this._indicator.button);
     }
 
