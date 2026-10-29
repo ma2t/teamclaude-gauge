@@ -1,0 +1,5 @@
+#!/bin/sh
+# tcg-forecast: when Fable comes back on the teamclaude fleet. install.sh
+# links this file into ~/.local/bin. gjs resolves imports from the script's
+# own path, so this wrapper runs the real module behind the link.
+exec gjs -m "$(dirname "$(realpath "$0")")/forecast.js" "$@"
