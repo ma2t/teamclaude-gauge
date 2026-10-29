@@ -31,7 +31,15 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir -m 700 "$work/run"
-export XDG_CONFIG_HOME="$work/config" XDG_RUNTIME_DIR="$work/run"
+mkdir -p "$work/data/gnome-shell/extensions"
+# Throwaway data, bin and cache dirs: the Shell loads this checkout's
+# extension/, and install.sh (run by tools/live-load.sh) and the live-load
+# snapshots stay away from the real install.
+export XDG_CONFIG_HOME="$work/config" XDG_RUNTIME_DIR="$work/run" XDG_DATA_HOME="$work/data" \
+    XDG_BIN_HOME="$work/bin" XDG_CACHE_HOME="$work/cache"
+# The Shell runs without X11; an inherited DISPLAY would let a GTK child
+# reach the real desktop.
+unset DISPLAY
 
 case "$mode" in
     load) ;;
@@ -47,9 +55,7 @@ case "$mode" in
         monitor=2560x2880 # tall enough that the accounts grid does not scroll
         ;;
     live-load)
-        # An empty data dir hides the installed copy from the startup scan.
-        mkdir "$work/data"
-        export XDG_DATA_HOME="$work/data" TCG_RESULT="$work/result" TCG_REPO="$(dirname "$here")"
+        export TCG_RESULT="$work/result" TCG_REPO="$(dirname "$here")"
         script="$here/live-load.js"
         ;;
     *)
@@ -57,6 +63,11 @@ case "$mode" in
         exit 2
         ;;
 esac
+
+# live-load starts with an empty extensions dir: tools/live-load.sh adds it.
+if [[ "$mode" != live-load ]]; then
+    ln -s "$(dirname "$here")/extension" "$work/data/gnome-shell/extensions/$uuid"
+fi
 
 dbus-run-session -- bash -s "$uuid" "$work" "$script" "$mode" "$monitor" 2>>"$work/bus.log" <<'INNER'
 uuid=$1 work=$2 script=$3 mode=$4 monitor=$5

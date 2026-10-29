@@ -5,7 +5,7 @@ set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
 src="$(cd "$(dirname "$0")" && pwd)/extension"
-dest="$HOME/.local/share/gnome-shell/extensions/$uuid"
+dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"
 
 mkdir -p "$(dirname "$dest")"
 ln -sfn "$src" "$dest"
