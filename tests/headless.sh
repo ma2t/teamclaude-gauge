@@ -10,7 +10,8 @@
 #   tests/headless.sh live-load   the Shell starts without the extension;
 #                                 tools/live-load.sh loads it, then reloads it
 #   tests/headless.sh demo DIR    the README images: the fictional fleet of
-#                                 tests/demo.js at 2x scale, cropped to the menu
+#                                 tests/demo.js at 2x scale, cropped to the menu,
+#                                 plus its forecast chart
 set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
@@ -53,6 +54,7 @@ case "$mode" in
         export TCG_SHOT_DIR="$(realpath "$2")"
         script="$here/demo-shot.js"
         monitor=2560x2880 # tall enough that the accounts grid does not scroll
+        gjs -m "$here/forecast-shot.js" "$TCG_SHOT_DIR" dark
         ;;
     live-load)
         export TCG_RESULT="$work/result" TCG_REPO="$(dirname "$here")"
