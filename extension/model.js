@@ -6,7 +6,7 @@ const WARN = 0.7;
 const CRIT = 0.9;
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const BUCKETS = [
     {key: 'fiveHour', label: '5h', source: 'unified5h'},
     {key: 'weeklyShared', label: '7d', source: 'unified7d'},
@@ -16,7 +16,7 @@ const BUCKETS = [
 const CAP_ORDER = ['weeklyShared', 'fiveHour', 'weeklyFable'];
 const DEFAULT_THRESHOLD = 0.99;
 
-const pad = n => String(n).padStart(2, '0');
+export const pad = n => String(n).padStart(2, '0');
 const clamp = x => Math.max(0, Math.min(1, x));
 
 export function level(fraction) {
@@ -69,12 +69,12 @@ export function offView(error) {
     };
 }
 
-function threshold(status, source) {
+export function threshold(status, source) {
     const table = status?.switchThresholds;
     return table?.[source] ?? table?.default ?? status?.switchThreshold ?? DEFAULT_THRESHOLD;
 }
 
-const active = account => !account.disabled && account.status === 'active';
+export const active = account => !account.disabled && account.status === 'active';
 
 // A window whose reset already passed has rolled over, whatever it last read.
 const usable = (bucket, limit, nowMs) =>
@@ -149,7 +149,7 @@ function accountNote(account, status, nowMs) {
 
 // Most accounts here share one local part, so the domain tells them apart;
 // two accounts on one domain keep their full address.
-function shortName(name, accounts) {
+export function shortName(name, accounts) {
     const domain = name.split('@')[1];
     const shared = accounts.filter(a => a.name.split('@')[1] === domain).length > 1;
     return domain && !shared ? domain : name;
