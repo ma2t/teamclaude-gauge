@@ -3,11 +3,8 @@
 // and /status payloads, account by account. No gi imports, so node --test,
 // tcg-forecast and the forecast window all run it.
 
-import {active, shortName, threshold} from './model.js';
+import {DAY, HOUR, MINUTE, active, inactiveNote, shortName, threshold} from './model.js';
 
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 const TICK = 15 * MINUTE;
 const MIN_SPAN = 3 * HOUR;
@@ -42,11 +39,10 @@ function nextReset(resetAt, nowMs) {
     return next;
 }
 
+const mean = (values, empty) => values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : empty;
+
 // An account with no known tier weighs as much as the average one.
-function meanWeight(accounts) {
-    const known = accounts.map(a => a.tier?.weight).filter(w => w > 0);
-    return known.length > 0 ? known.reduce((sum, w) => sum + w, 0) / known.length : 1;
-}
+const meanWeight = accounts => mean(accounts.map(a => a.tier?.weight).filter(w => w > 0), 1);
 
 function simAccounts(quota, status, limit, nowMs) {
     const fallback = meanWeight(quota.accounts);
@@ -187,7 +183,7 @@ export function buildForecast(quota, status, nowMs, {days = 7, stepMs = STEPS['3
     const first = sims.map(s => ({use: s.use, resetAt: s.resetAt}));
     const demand = demandPerHour(sims, nowMs);
     const counted = sims.filter(s => s.live && s.known);
-    const weight = counted.reduce((sum, s) => sum + s.weight, 0) / Math.max(1, counted.length);
+    const weight = mean(counted.map(s => s.weight), 0);
 
     const midnight = new Date(nowMs);
     midnight.setHours(0, 0, 0, 0);
@@ -204,16 +200,11 @@ export function buildForecast(quota, status, nowMs, {days = 7, stepMs = STEPS['3
         // the account out past the next Fable reset.
         const hidden = s.live && s.known && s.blockedUntil > nowMs &&
             (first[i].use < limit || (first[i].resetAt != null && s.blockedUntil > first[i].resetAt));
-        let state = null;
-        if (account.disabled)
-            state = 'disabled';
-        else if (!s.live)
-            state = 'error';
         return {
             name: account.name,
             short: s.short,
             known: s.known,
-            state,
+            state: inactiveNote(account),
             use: first[i].use,
             resetAt: first[i].resetAt,
             blocked: hidden ? {window: s.blockedBy, until: Number.isFinite(s.blockedUntil) ? s.blockedUntil : null} : null,

@@ -13,6 +13,9 @@ export const BASE_URL = 'http://127.0.0.1:3456/teamclaude';
 export const FORECAST_APP_ID = 'io.github.ma2t.TeamclaudeGauge.Forecast';
 const TIMEOUT_SECONDS = 3;
 
+// tcg-forecast --window and the window itself refuse to start without one.
+export const hasDisplay = () => Boolean(GLib.getenv('DISPLAY') || GLib.getenv('WAYLAND_DISPLAY'));
+
 export function newSession() {
     return new Soup.Session({timeout: TIMEOUT_SECONDS});
 }

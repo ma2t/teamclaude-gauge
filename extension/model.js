@@ -4,8 +4,9 @@
 
 const WARN = 0.7;
 const CRIT = 0.9;
-const MINUTE = 60 * 1000;
-const DAY = 24 * 60 * MINUTE;
+export const MINUTE = 60 * 1000;
+export const HOUR = 60 * MINUTE;
+export const DAY = 24 * HOUR;
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const BUCKETS = [
     {key: 'fiveHour', label: '5h', source: 'unified5h'},
@@ -31,9 +32,11 @@ export function percent(fraction) {
     return `${Math.floor(clamp(fraction) * 100 + 1e-6)}%`;
 }
 
+export const hhmm = date => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
 export function clockTime(ms, nowMs) {
     const date = new Date(ms);
-    const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const time = hhmm(date);
     return date.toDateString() === new Date(nowMs).toDateString()
         ? time : `${WEEKDAYS[date.getDay()]} ${time}`;
 }
@@ -137,11 +140,18 @@ function gauge(bucket) {
 }
 
 // The ring shows Fable, so only another bucket's cap needs its label.
-function accountNote(account, status, nowMs) {
+// Why an account is out whatever its quota: the gauge tiles and the
+// forecast rows use the same words.
+export function inactiveNote(account) {
     if (account.disabled)
         return 'disabled';
-    if (!active(account))
-        return 'error';
+    return active(account) ? null : 'error';
+}
+
+function accountNote(account, status, nowMs) {
+    const inactive = inactiveNote(account);
+    if (inactive)
+        return inactive;
     for (const key of CAP_ORDER) {
         const def = BUCKETS.find(b => b.key === key);
         const bucket = account.buckets?.[key];

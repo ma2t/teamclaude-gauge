@@ -9,7 +9,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 import System from 'system';
 
-import {FORECAST_APP_ID, describe, getFleet, getJson, newSession} from './api.js';
+import {FORECAST_APP_ID, describe, getFleet, getJson, hasDisplay, newSession} from './api.js';
 import {buildForecast} from './forecast.js';
 import {THEMES, chartSize, drawForecast} from './forecastChart.js';
 import {grows} from './model.js';
@@ -18,7 +18,7 @@ const REFRESH_SECONDS = 60;
 
 // With no display variable GTK falls back to the wayland-0 socket, which
 // over SSH is the station's own screen.
-if (!GLib.getenv('DISPLAY') && !GLib.getenv('WAYLAND_DISPLAY')) {
+if (!hasDisplay()) {
     printerr('no display: the forecast window needs a desktop session');
     System.exit(2);
 }

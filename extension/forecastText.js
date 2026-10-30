@@ -2,15 +2,17 @@
 // The forecast as text: the terminal chart of tcg-forecast, plus the change
 // list and demand line that the window draws too. No gi imports.
 
-import {WEEKDAYS, clockTime, pad} from './model.js';
+import {DAY, WEEKDAYS, clockTime, hhmm, pad} from './model.js';
 
-const DAY = 24 * 60 * 60 * 1000;
 const CHANGE_ROWS = 8;
 const GLYPHS = {past: '▓', out: '█', weak: '▒', strong: '░', none: ' '};
 const LETTERS = {red: 'R', amber: 'A', green: 'G'};
 const ANSI = {red: '\x1b[31m', amber: '\x1b[33m', green: '\x1b[32m'};
 const ANSI_RESET = '\x1b[0m';
-const CELL_LEVEL = {out: 'red', weak: 'amber', strong: 'green'};
+export const CELL_LEVEL = {out: 'red', weak: 'amber', strong: 'green'};
+
+export const perDay = forecast => Math.round(DAY / forecast.stepMs);
+const daysOf = forecast => forecast.columns.length / perDay(forecast);
 
 // Read at noon, so a daylight saving change cannot shift the date. The short
 // form fits the 4 columns a day of 6 h steps: "T29 ".
@@ -26,7 +28,7 @@ export function timeText(ms, nowMs) {
     if (ms - nowMs < 6 * DAY)
         return clockTime(ms, nowMs);
     const date = new Date(ms);
-    return `${WEEKDAYS[date.getDay()]} ${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${WEEKDAYS[date.getDay()]} ${pad(date.getDate())} ${hhmm(date)}`;
 }
 
 // A disabled or failing account is out for as long as it stays so, in the
@@ -42,43 +44,40 @@ export function resetText(account, nowMs) {
     return account.resetAt == null ? '-' : timeText(account.resetAt, nowMs);
 }
 
-const plural = n => `${n} account${n === 1 ? '' : 's'}`;
+const plural = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
-// The first rows only, so a fleet whose level flips at every reset still
-// fits a screen; --json keeps every change.
-export function changeRows(forecast) {
-    const days = Math.round(forecast.columns.length * forecast.stepMs / DAY);
-    const rows = forecast.changes.slice(0, CHANGE_ROWS).map((change, i) => {
-        const count = change.accounts.length;
-        let [prefix, time] = ['from', timeText(change.at, forecast.now)];
-        if (i === 0)
-            [prefix, time] = change.until == null ? ['for', `${days} day${days === 1 ? '' : 's'}`] : ['until', timeText(change.until, forecast.now)];
-        return {
-            prefix,
-            time,
-            level: change.level,
-            accounts: count > 0 && count <= 3 ? `${plural(count)} (${change.accounts.join(', ')})` : plural(count),
-        };
-    });
-    return {rows, more: Math.max(0, forecast.changes.length - CHANGE_ROWS)};
-}
-
-export const moreLine = more => `${more} more change${more === 1 ? '' : 's'}`;
-
-export function demandLine(forecast) {
+function demandLine(forecast) {
     return forecast.hoursPerAccount == null
         ? 'no Fable use in the current windows'
         : `fleet use: about 1 account every ${Math.round(forecast.hoursPerAccount)} h`;
 }
 
+// The first rows only, so a fleet whose level flips at every reset still
+// fits a screen; --json keeps every change. The notes go under the rows.
+export function changeRows(forecast) {
+    const rows = forecast.changes.slice(0, CHANGE_ROWS).map((change, i) => {
+        const count = change.accounts.length;
+        const [prefix, at] = i > 0 ? ['from', change.at] : change.until == null ? ['for', null] : ['until', change.until];
+        return {
+            prefix,
+            time: at == null ? plural(daysOf(forecast), 'day') : timeText(at, forecast.now),
+            level: change.level,
+            accounts: count > 0 && count <= 3 ? `${plural(count, 'account')} (${change.accounts.join(', ')})` : plural(count, 'account'),
+        };
+    });
+    const more = Math.max(0, forecast.changes.length - CHANGE_ROWS);
+    const notes = [...(more > 0 ? [plural(more, 'more change')] : []), demandLine(forecast)];
+    return {rows, more, notes};
+}
+
 export function forecastLines(forecast, {color = false} = {}) {
     const width = Math.max('level'.length, ...forecast.accounts.map(a => a.short.length)) + 2;
-    const perDay = Math.round(DAY / forecast.stepMs);
-    const days = forecast.columns.length / perDay;
+    const columns = perDay(forecast);
+    const days = daysOf(forecast);
     const indent = ' '.repeat(width);
     const axis = Array.from({length: days}, (_, k) =>
-        dayLabel(forecast.start + k * DAY, {short: perDay < 7}).padEnd(perDay)).join('');
-    const ticks = `|${'·'.repeat(perDay - 1)}`.repeat(days);
+        dayLabel(forecast.start + k * DAY, {short: columns < 7}).padEnd(columns)).join('');
+    const ticks = `|${'·'.repeat(columns - 1)}`.repeat(days);
     const paint = (level, text) => color ? `${ANSI[level]}${text}${ANSI_RESET}` : text;
     const cell = value => CELL_LEVEL[value] ? paint(CELL_LEVEL[value], GLYPHS[value]) : GLYPHS[value];
     const rows = forecast.accounts.map(account =>
@@ -88,7 +87,7 @@ export function forecastLines(forecast, {color = false} = {}) {
             return ' ';
         return color ? paint(level, '█') : LETTERS[level];
     };
-    const {rows: changes, more} = changeRows(forecast);
+    const {rows: changes, notes} = changeRows(forecast);
     const legend = `${GLYPHS.past} past  ${GLYPHS.out} no Fable  ${GLYPHS.weak} 85% or more  ${GLYPHS.strong} room`;
     return [
         indent + axis,
@@ -97,8 +96,7 @@ export function forecastLines(forecast, {color = false} = {}) {
         `${'level'.padEnd(width)}${forecast.levels.map(mark).join('')}`,
         '',
         ...changes.map(row => `${row.prefix.padEnd(5)} ${row.time.padEnd(12)}  ${row.level.padEnd(5)}  ${row.accounts}`),
-        ...(more > 0 ? [moreLine(more)] : []),
-        demandLine(forecast),
+        ...notes,
         color ? legend : `${legend}  level: R red  A amber  G green`,
     ];
 }

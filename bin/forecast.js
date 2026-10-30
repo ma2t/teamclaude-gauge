@@ -6,7 +6,7 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import System from 'system';
 
-import {describe, getFleet, getJson, newSession} from '../extension/api.js';
+import {describe, getFleet, getJson, hasDisplay, newSession} from '../extension/api.js';
 import {STEPS, buildForecast} from '../extension/forecast.js';
 import {forecastLines} from '../extension/forecastText.js';
 
@@ -43,7 +43,7 @@ if (!options)
     exit(USAGE, 2);
 
 if (options.window) {
-    if (!GLib.getenv('DISPLAY') && !GLib.getenv('WAYLAND_DISPLAY'))
+    if (!hasDisplay())
         exit('no display: --window needs a desktop session', 2);
     const window = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent()
         .resolve_relative_path('extension/forecastWindow.js').get_path();

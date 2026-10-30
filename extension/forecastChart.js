@@ -6,9 +6,9 @@
 import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 
-import {changeRows, dayLabel, demandLine, moreLine, resetText} from './forecastText.js';
+import {DAY} from './model.js';
+import {CELL_LEVEL, changeRows, dayLabel, perDay, resetText} from './forecastText.js';
 
-const DAY = 24 * 60 * 60 * 1000;
 const MARGIN = 16;
 const LABEL_MIN = 96;
 const LABEL_MAX = 240;
@@ -32,8 +32,6 @@ export const THEMES = {
     dark: {bg: rgb('#222226'), fg: rgb('#ffffff'), red: rgb('#f66151'), amber: rgb('#ffa348'), green: rgb('#57e389')},
     light: {bg: rgb('#fafafb'), fg: rgb('#1e1e1e'), red: rgb('#e01b24'), amber: rgb('#e66100'), green: rgb('#26a269')},
 };
-
-const CELL_COLOR = {out: 'red', weak: 'amber', strong: 'green'};
 
 // Widest pixel width of the strings, in the chart font.
 function widest(strings) {
@@ -59,8 +57,8 @@ function resetWidth(forecast) {
 }
 
 export function chartSize(forecast) {
-    const {rows, more} = changeRows(forecast);
-    const lines = rows.length + (more > 0 ? 1 : 0) + 1;
+    const {rows, notes} = changeRows(forecast);
+    const lines = rows.length + notes.length;
     return [
         2 * MARGIN + labelWidth(forecast) + CELLS + resetWidth(forecast),
         2 * MARGIN + AXIS + (forecast.accounts.length + 1) * ROW + GAP + lines * ROW,
@@ -103,13 +101,13 @@ export function drawForecast(cr, forecast, theme) {
     const label = labelWidth(forecast);
     const x0 = MARGIN + label;
     const cell = CELLS / forecast.columns.length;
-    const perDay = Math.round(DAY / forecast.stepMs);
+    const columns = perDay(forecast);
     const top = MARGIN + AXIS;
     const levelY = top + forecast.accounts.length * ROW;
     const bottom = levelY + ROW;
 
-    for (let k = 0; k * perDay < forecast.columns.length; k++) {
-        const x = x0 + k * perDay * cell;
+    for (let k = 0; k * columns < forecast.columns.length; k++) {
+        const x = x0 + k * columns * cell;
         text(cr, dayLabel(forecast.start + k * DAY), x + 4, MARGIN, theme.fg, {alpha: 0.7});
         box(cr, x, top, 1, bottom - top, theme.fg, 0.15);
     }
@@ -122,7 +120,7 @@ export function drawForecast(cr, forecast, theme) {
             if (value === 'past')
                 box(cr, x, y + (ROW - BAR) / 2, width, BAR, theme.fg, 0.12);
             else if (value !== 'none')
-                box(cr, x, y + (ROW - BAR) / 2, width, BAR, theme[CELL_COLOR[value]]);
+                box(cr, x, y + (ROW - BAR) / 2, width, BAR, theme[CELL_LEVEL[value]]);
         }
         text(cr, resetText(account, forecast.now), x0 + CELLS + 8, y + 3, theme.fg, {alpha: 0.7});
     });
@@ -136,7 +134,7 @@ export function drawForecast(cr, forecast, theme) {
     const nowX = x0 + (forecast.now - forecast.start) / forecast.stepMs * cell;
     box(cr, nowX - 0.75, top - 4, 1.5, bottom - top + 4, theme.fg, 0.8);
 
-    const {rows, more} = changeRows(forecast);
+    const {rows, notes} = changeRows(forecast);
     const accountsWidth = label + CELLS + resetWidth(forecast) - FIELDS[4];
     rows.forEach((row, i) => {
         const y = bottom + GAP + i * ROW;
@@ -148,7 +146,6 @@ export function drawForecast(cr, forecast, theme) {
         text(cr, row.level, MARGIN + FIELDS[3], y, theme.fg);
         text(cr, row.accounts, MARGIN + FIELDS[4], y, theme.fg, {width: accountsWidth});
     });
-    const tail = more > 0 ? [moreLine(more), demandLine(forecast)] : [demandLine(forecast)];
-    tail.forEach((line, i) =>
+    notes.forEach((line, i) =>
         text(cr, line, MARGIN, bottom + GAP + (rows.length + i) * ROW, theme.fg, {alpha: 0.7}));
 }
