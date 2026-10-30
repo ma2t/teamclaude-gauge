@@ -12,6 +12,7 @@ import System from 'system';
 import {FORECAST_APP_ID, describe, getFleet, getJson, newSession} from './api.js';
 import {buildForecast} from './forecast.js';
 import {THEMES, chartSize, drawForecast} from './forecastChart.js';
+import {grows} from './model.js';
 
 const REFRESH_SECONDS = 60;
 
@@ -27,6 +28,7 @@ function openWindow(app) {
     const cancellable = new Gio.Cancellable();
     const style = Adw.StyleManager.get_default();
     let forecast = null;
+    let size = null;
 
     const area = new Gtk.DrawingArea();
     area.set_draw_func((_area, cr) => {
@@ -62,8 +64,11 @@ function openWindow(app) {
             area.queue_draw();
             stack.visible_child_name = 'chart';
             // GTK 4 does not grow a mapped window on its own.
-            const [, natural] = view.get_preferred_size();
-            window.set_default_size(natural.width, natural.height);
+            if (grows(size, [width, height])) {
+                const [, natural] = view.get_preferred_size();
+                window.set_default_size(natural.width, natural.height);
+            }
+            size = [width, height];
         } catch (e) {
             if (cancellable.is_cancelled())
                 return;

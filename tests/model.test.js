@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import {ago, backIn, buildView, clockTime, level, percent} from '../extension/model.js';
+import {ago, backIn, buildView, clockTime, grows, level, percent} from '../extension/model.js';
 import {bucket, quotaOf} from './fleet.js';
 
 const MIN = 60 * 1000;
@@ -226,4 +226,12 @@ test('header counts accounts and names the current one; footer shows probe age',
     assert.deepEqual(view.header, {accounts: 2, current: 'b@example.com'});
     assert.equal(view.footer, 'Probed 2 min ago');
     assert.equal(buildView(quota, STATUS, NOW).footer, null);
+});
+
+test('grows: the forecast window resizes on the first chart and on a larger one only', () => {
+    assert.equal(grows(null, [700, 500]), true);
+    assert.equal(grows([700, 500], [700, 500]), false);
+    assert.equal(grows([700, 500], [600, 400]), false);
+    assert.equal(grows([700, 500], [720, 400]), true);
+    assert.equal(grows([700, 500], [600, 520]), true);
 });

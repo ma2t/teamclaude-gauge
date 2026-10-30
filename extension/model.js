@@ -56,6 +56,12 @@ export function ago(ms) {
     return `${Math.floor(seconds / 3600)} h ago`;
 }
 
+// The forecast window sets its size on the first chart and on a larger
+// one only: a refresh must not undo a size the user chose.
+export function grows(last, next) {
+    return !last || next[0] > last[0] || next[1] > last[1];
+}
+
 export function offView(error) {
     return {
         state: 'off',
