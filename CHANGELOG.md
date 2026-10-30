@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `TCG_BASE_URL`: points the panel, the forecast window and `tcg-forecast` at another loopback server. Why: `tests/headless.sh window` now serves the fictional fleet of `tests/demo.js` to the window, so its screenshots hold no real account name.
+
+### Changed
+
+- `tests/headless.sh window DIR` accepts any folder. Why: the screenshots show the fictional fleet, so the guard against a folder inside the repo had nothing left to protect.
+
 ## 4 (2026-10-30)
 
 ### Added

@@ -77,6 +77,8 @@ flowchart LR
 
 Both calls are local and read-only. The extension sends nothing anywhere else.
 
+`TCG_BASE_URL` points the panel, the window and `tcg-forecast` at another server, such as a test fleet. Only a loopback `http://127.0.0.1:PORT/...` or `http://localhost:PORT/...` counts; any other value is ignored.
+
 ## Install
 
 Requires GNOME Shell 49 and the teamclaude service (`teamclaude service install`).
@@ -109,12 +111,12 @@ Without it, log out and back in. The same command loads an update: `git pull && 
 
 | Command | What it checks |
 |---|---|
-| `npm test` | Model, forecast, text, chart and CLI unit tests, plus read-only smoke tests against the running proxy (gauge payload, forecast, `tcg-forecast --json`), skipped when it is down |
+| `npm test` | Model, forecast, text, chart, CLI and API unit tests, plus read-only smoke tests against the running proxy (gauge payload, forecast, `tcg-forecast --json`), skipped when it is down |
 | `tests/headless.sh` | Loads this checkout's extension in a throwaway headless Shell, exit 0 when ACTIVE |
 | `tests/headless.sh shots DIR` | Same, and saves panel, menu and accounts screenshots (dark and light) to `DIR` |
 | `tests/headless.sh live-load` | Starts the Shell without the extension, loads it with `tools/live-load.sh`, then reloads it |
 | `tests/headless.sh demo assets` | Renders the fictional fleet of `tests/demo.js` and rewrites the README images |
-| `tests/headless.sh window DIR` | Opens the forecast window from the menu item and saves it, dark and light, to `DIR`. It reads the real proxy: keep these PNGs out of the repo |
+| `tests/headless.sh window DIR` | Opens the forecast window from the menu item and saves it, dark and light, to `DIR`. The panel and the window read the fictional fleet of `tests/demo.js` through `TCG_BASE_URL`, so the PNGs hold no real account name |
 | `gjs -m tests/forecast-shot.js DIR` | Draws the fictional fleet's forecast to PNG, with no display |
 
 `tests/headless.sh shots DIR` shows a change before it reaches your session; `tools/live-load.sh` then puts it there.

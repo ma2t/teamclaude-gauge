@@ -8,7 +8,12 @@ import Soup from 'gi://Soup?version=3.0';
 
 Gio._promisify(Soup.Session.prototype, 'send_and_read_async');
 
-export const BASE_URL = 'http://127.0.0.1:3456/teamclaude';
+// TCG_BASE_URL points every view at another server on this machine, such as
+// the fictional fleet of tests/window-shot.js. Loopback only: the gauge
+// talks to nothing else.
+const override = GLib.getenv('TCG_BASE_URL') ?? '';
+export const BASE_URL = /^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(override)
+    ? override.replace(/\/+$/, '') : 'http://127.0.0.1:3456/teamclaude';
 // The forecast window's app id: the menu item finds an open window by it.
 export const FORECAST_APP_ID = 'io.github.ma2t.TeamclaudeGauge.Forecast';
 const TIMEOUT_SECONDS = 3;

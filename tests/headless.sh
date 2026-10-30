@@ -13,7 +13,8 @@
 #                                 tests/demo.js at 2x scale, cropped to the menu,
 #                                 plus its forecast chart
 #   tests/headless.sh window DIR  opens the forecast window from the menu item
-#                                 and screenshots it, dark then light
+#                                 and screenshots it, dark then light, on the
+#                                 fictional fleet of tests/demo.js
 set -euo pipefail
 
 uuid=teamclaude-gauge@ma2t.github.io
@@ -59,13 +60,8 @@ case "$mode" in
         gjs -m "$here/forecast-shot.js" "$TCG_SHOT_DIR" dark
         ;;
     window)
-        shots="$(realpath -m "${2:?usage: tests/headless.sh window DIR}")"
-        if [[ "$shots/" == "$(dirname "$here")/"* ]]; then
-            echo "window DIR must be outside the repo: the PNGs hold real account names" >&2
-            exit 2
-        fi
-        mkdir -p "$shots"
-        export TCG_SHOT_DIR="$shots" TCG_RESULT="$work/result"
+        mkdir -p "${2:?usage: tests/headless.sh window DIR}"
+        export TCG_SHOT_DIR="$(realpath "$2")" TCG_RESULT="$work/result"
         script="$here/window-shot.js"
         ;;
     live-load)

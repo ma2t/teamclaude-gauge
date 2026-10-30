@@ -1,5 +1,5 @@
 // Argument checks of the commands: each bad call fails before it reads the
-// proxy or starts a Shell.
+// proxy.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
@@ -43,22 +43,5 @@ test('forecast-shot.js: a DIR that is not a directory prints the usage, exit 2',
         }
     } finally {
         rmSync(dir, {recursive: true});
-    }
-});
-
-// A stub dbus-run-session stands in for the Shell, so a broken check cannot
-// start one here.
-test('headless.sh window: a DIR inside the repo is refused, exit 2', () => {
-    const stub = mkdtempSync(join(tmpdir(), 'tcg-stub-'));
-    try {
-        writeFileSync(join(stub, 'dbus-run-session'), '#!/bin/sh\nexit 0\n', {mode: 0o755});
-        const env = {PATH: `${stub}:${process.env.PATH}`};
-        for (const target of [path('../'), path('./shots-check')]) {
-            const result = run('bash', [path('./headless.sh'), 'window', target], env);
-            assert.equal(result.status, 2, result.stderr);
-            assert.match(result.stderr, /outside the repo/);
-        }
-    } finally {
-        rmSync(stub, {recursive: true});
     }
 });
