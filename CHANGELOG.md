@@ -12,6 +12,7 @@
 
 - `tests/headless.sh` loads the extension of its own checkout, with throwaway data, bin and cache dirs. Why: it tested the installed copy, and its live-load mode wrote to the real install.
 - The teamclaude client moved to `extension/api.js`. Why: the panel, the command and the window share it.
+- `install.sh` also links `tcg-forecast` into `~/.local/bin` (`XDG_BIN_HOME`), stops if a file that is not a link is there, and honors `XDG_DATA_HOME`. Why: the command must be on PATH, also over SSH.
 
 ## 3 (2026-10-23)
 

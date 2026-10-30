@@ -3,8 +3,8 @@
 GNOME Shell 49 panel indicator for a local [teamclaude](https://github.com/KarpelesLab/teamclaude) proxy. It shows where the account fleet stands on the 5h window, the weekly window and the Fable weekly cap, and when Fable comes back.
 
 <p align="center">
-  <img src="assets/menu.png" width="374" alt="Top bar label 'Fable 91% · 7d 55%' with the open menu: fleet bars for 5h, 7d and Fable, then the next three Fable resets">
-  <img src="assets/accounts.png" width="430" alt="Accounts grid: one tile per account with a Fable ring, 7d and 5h bars, and the come-back time of capped accounts">
+  <img src="assets/menu.png" width="366" alt="Top bar label 'Fable 91% · 7d 55%' with the open menu: fleet bars for 5h, 7d and Fable, then the next three Fable resets">
+  <img src="assets/accounts.png" width="428" alt="Accounts grid: one tile per account with a Fable ring, 7d and 5h bars, and the come-back time of capped accounts">
 </p>
 <p align="center"><sub>A fictional fleet, from <code>tests/demo.js</code></sub></p>
 
@@ -47,16 +47,19 @@ When does Fable come back, account by account? The same forecast shows in a term
 | Terminal | `tcg-forecast [--days 1-14] [--step 1h\|3h\|6h] [--json]`. Works over SSH: `ssh -t <station> tcg-forecast`. A legend line ends the chart |
 | Window | Gauge menu, "Fable forecast", or `tcg-forecast --window` |
 
+An account is available when it is active, under the switch threshold (99% by default) and has no 7d or 5h cap.
+
 | Level | Rule |
 |---|---|
-| green | 2 or more accounts under 85% Fable |
-| amber | 1 or more accounts under the switch threshold (99%) |
-| red | No account under the switch threshold, or a 7d or 5h cap on all of them |
+| green | 2 or more available accounts under 85% Fable |
+| amber | 1 or more available accounts |
+| red | No available account |
 
 - Resets free an account at their exact time.
 - After a reset, the fleet's demand fills the accounts again, one at a time, so green can turn amber. The demand is the largest use rate of the current windows, counted from the newest ones.
 - The demand is a lower bound: when the whole fleet was capped, the demand it could not serve is not seen.
-- A 5h or 7d cap that hides Fable room shows on the account row, for example `5h back 18:41`.
+- A 5h or 7d cap that hides Fable room, or outlasts the Fable reset, shows on the account row, for example `5h back 18:41`. A disabled or failing account reads `disabled` or `error`.
+- A time 6 days or more away carries its day of month: `Fri 06 05:11`.
 - The change list shows the first 8 changes. `--json` lists all of them.
 - With 3 h columns the terminal chart is about 90 characters wide. `--step 6h` makes it about 60, and is the default over 7 days.
 
@@ -64,12 +67,12 @@ When does Fable come back, account by account? The same forecast shows in a term
 
 ```mermaid
 flowchart LR
-  TC[teamclaude service<br/>127.0.0.1:3456] -->|GET /teamclaude/quota| EXT
-  TC -->|GET /teamclaude/status| EXT
-  EXT[extension.js<br/>every 30 s and on menu open] --> MODEL[model.js<br/>pure view model]
+  TC[teamclaude service<br/>127.0.0.1:3456] -->|GET /teamclaude/quota<br/>GET /teamclaude/status| API[api.js<br/>read-only client]
+  API --> EXT[extension.js<br/>every 30 s and on menu open]
+  EXT --> MODEL[model.js<br/>pure view model]
   MODEL --> EXT
   EXT --> UI[panel ring + label<br/>popup menu]
-  TC -->|same two calls| FC[tcg-forecast<br/>forecast window]
+  API --> FC[tcg-forecast<br/>forecast window]
 ```
 
 Both calls are local and read-only. The extension sends nothing anywhere else.
@@ -106,7 +109,7 @@ Without it, log out and back in. The same command loads an update: `git pull && 
 
 | Command | What it checks |
 |---|---|
-| `npm test` | `model.js` unit tests, plus a read-only smoke test against the running proxy (skips when it is down) |
+| `npm test` | Model, forecast, text, chart and CLI unit tests, plus read-only smoke tests against the running proxy (gauge payload, forecast, `tcg-forecast --json`), skipped when it is down |
 | `tests/headless.sh` | Loads this checkout's extension in a throwaway headless Shell, exit 0 when ACTIVE |
 | `tests/headless.sh shots DIR` | Same, and saves panel, menu and accounts screenshots (dark and light) to `DIR` |
 | `tests/headless.sh live-load` | Starts the Shell without the extension, loads it with `tools/live-load.sh`, then reloads it |
