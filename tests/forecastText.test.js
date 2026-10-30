@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 import {buildForecast} from '../extension/forecast.js';
-import {changeRows, forecastLines} from '../extension/forecastText.js';
+import {changeRows, forecastLines, resetText} from '../extension/forecastText.js';
 import {bucket, quotaOf} from './fleet.js';
 
 const MIN = 60 * 1000;
@@ -47,10 +47,13 @@ test('chart: day axis, ticks, rows by reset time, level letters', () => {
 test('change list, demand line and legend', () => {
     assert.equal(chart[5], '');
     assert.deepEqual(chart.slice(6, 9), [
-        'until Sat 03:11  red    0 accounts',
-        'from  Sat 03:11  amber  1 account (one.example)',
-        'from  Sun 08:11  green  2 accounts (two.example, one.example)',
+        'until Sat 03:11     red    0 accounts',
+        'from  Sat 03:11     amber  1 account (one.example)',
+        'from  Sun 08:11     green  2 accounts (two.example, one.example)',
     ]);
+    // 6 days or more away, the day of month joins the weekday.
+    const late = lines([account('me@one.example', 1, NOW + 6 * DAY + 2 * HOUR)]);
+    assert.equal(late[5], 'until Thu 29 18:11  red    0 accounts');
     assert.equal(chart.at(-2), 'fleet use: about 1 account every 78 h');
     assert.equal(chart.at(-1), '▓ past  █ no Fable  ▒ 85% or more  ░ room  level: R red  A amber  G green');
 });
@@ -58,13 +61,20 @@ test('change list, demand line and legend', () => {
 test('one level all along reads "for N days"', () => {
     const calm = lines([account('me@one.example', 0.01, NOW + 6 * DAY + 12 * HOUR),
         account('me@two.example', 0.01, NOW + 6 * DAY + 12 * HOUR)]);
-    assert.equal(calm[6], 'for   7 days     green  2 accounts (one.example, two.example)');
+    assert.equal(calm[6], 'for   7 days        green  2 accounts (one.example, two.example)');
+    const day = lines([account('me@one.example', 0.01, NOW + 6 * DAY), account('me@two.example', 0.01, NOW + 6 * DAY)], {days: 1});
+    assert.equal(day[6], 'for   1 day         green  2 accounts (one.example, two.example)');
 });
 
 test('a 5h cap that hides Fable room shows instead of the reset', () => {
     const blocked = lines([account('me@one.example', 0.2, NOW + 5 * DAY, [1, NOW + 90 * MIN]),
         account('me@two.example', 1, NOW + 5 * DAY)]);
     assert.ok(blocked[2].endsWith('  5h back 18:41'));
+    // A reset 6 days or more away carries its day of month.
+    assert.ok(lines([account('me@one.example', 0.2, NOW + 6 * DAY + 12 * HOUR)])[2].endsWith('  Fri 30 04:11'));
+    // A disabled or failing account shows its state, not a reset.
+    assert.equal(resetText({known: true, state: 'disabled', resetAt: NOW + HOUR, blocked: null}, NOW), 'disabled');
+    assert.equal(resetText({known: true, state: 'error', resetAt: NOW + HOUR, blocked: null}, NOW), 'error');
 });
 
 test('the change list stops at 8 rows', () => {

@@ -18,8 +18,10 @@ const AXIS = 24;
 const ROW = 22;
 const BAR = 12;
 const GAP = 16;
-// x offsets of the change list fields: prefix, time, level, accounts
-const FIELDS = [0, 44, 124, 184];
+// x offsets of the change list fields: prefix, time, level square, level
+// word, accounts
+const FIELDS = [0, 44, 144, 160, 220];
+const SQUARE = 10;
 const FONT = Pango.FontDescription.from_string('Sans 10');
 
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -135,13 +137,16 @@ export function drawForecast(cr, forecast, theme) {
     box(cr, nowX - 0.75, top - 4, 1.5, bottom - top + 4, theme.fg, 0.8);
 
     const {rows, more} = changeRows(forecast);
-    const accountsWidth = label + CELLS + resetWidth(forecast) - FIELDS[3];
+    const accountsWidth = label + CELLS + resetWidth(forecast) - FIELDS[4];
     rows.forEach((row, i) => {
         const y = bottom + GAP + i * ROW;
         text(cr, row.prefix, MARGIN + FIELDS[0], y, theme.fg);
         text(cr, row.time, MARGIN + FIELDS[1], y, theme.fg);
-        text(cr, row.level, MARGIN + FIELDS[2], y, theme[row.level]);
-        text(cr, row.accounts, MARGIN + FIELDS[3], y, theme.fg, {width: accountsWidth});
+        // Amber and green text fall under 4.5:1 on the light background: the
+        // color goes to a square, the word stays in the text color.
+        box(cr, MARGIN + FIELDS[2], y + 4, SQUARE, SQUARE, theme[row.level]);
+        text(cr, row.level, MARGIN + FIELDS[3], y, theme.fg);
+        text(cr, row.accounts, MARGIN + FIELDS[4], y, theme.fg, {width: accountsWidth});
     });
     const tail = more > 0 ? [moreLine(more), demandLine(forecast)] : [demandLine(forecast)];
     tail.forEach((line, i) =>

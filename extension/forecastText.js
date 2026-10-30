@@ -20,14 +20,26 @@ export function dayLabel(dayStartMs, {short = false} = {}) {
     return short ? `${day[0]}${pad(date.getDate())}` : `${day} ${pad(date.getDate())}`;
 }
 
-// A 7d or 5h cap that hides Fable room comes first: it is why the row is out.
+// Within a 14-day horizon a weekday repeats, and next Friday would read
+// like this Friday: 6 days or more away, the day of month joins it.
+export function timeText(ms, nowMs) {
+    if (ms - nowMs < 6 * DAY)
+        return clockTime(ms, nowMs);
+    const date = new Date(ms);
+    return `${WEEKDAYS[date.getDay()]} ${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// A disabled or failing account is out for as long as it stays so, in the
+// gauge tiles' words. A 7d or 5h cap comes next: it is why the row is out.
 export function resetText(account, nowMs) {
+    if (account.state)
+        return account.state;
     if (!account.known)
         return 'no data';
     const {blocked} = account;
     if (blocked)
-        return blocked.until == null ? `${blocked.window} capped` : `${blocked.window} back ${clockTime(blocked.until, nowMs)}`;
-    return account.resetAt == null ? '-' : clockTime(account.resetAt, nowMs);
+        return blocked.until == null ? `${blocked.window} capped` : `${blocked.window} back ${timeText(blocked.until, nowMs)}`;
+    return account.resetAt == null ? '-' : timeText(account.resetAt, nowMs);
 }
 
 const plural = n => `${n} account${n === 1 ? '' : 's'}`;
@@ -38,9 +50,9 @@ export function changeRows(forecast) {
     const days = Math.round(forecast.columns.length * forecast.stepMs / DAY);
     const rows = forecast.changes.slice(0, CHANGE_ROWS).map((change, i) => {
         const count = change.accounts.length;
-        let [prefix, time] = ['from', clockTime(change.at, forecast.now)];
+        let [prefix, time] = ['from', timeText(change.at, forecast.now)];
         if (i === 0)
-            [prefix, time] = change.until == null ? ['for', `${days} days`] : ['until', clockTime(change.until, forecast.now)];
+            [prefix, time] = change.until == null ? ['for', `${days} day${days === 1 ? '' : 's'}`] : ['until', timeText(change.until, forecast.now)];
         return {
             prefix,
             time,
@@ -84,7 +96,7 @@ export function forecastLines(forecast, {color = false} = {}) {
         ...rows,
         `${'level'.padEnd(width)}${forecast.levels.map(mark).join('')}`,
         '',
-        ...changes.map(row => `${row.prefix.padEnd(5)} ${row.time.padEnd(9)}  ${row.level.padEnd(5)}  ${row.accounts}`),
+        ...changes.map(row => `${row.prefix.padEnd(5)} ${row.time.padEnd(12)}  ${row.level.padEnd(5)}  ${row.accounts}`),
         ...(more > 0 ? [moreLine(more)] : []),
         demandLine(forecast),
         color ? legend : `${legend}  level: R red  A amber  G green`,
