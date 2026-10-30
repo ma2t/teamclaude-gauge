@@ -70,11 +70,13 @@ function openWindow(app) {
             area.queue_draw();
             stack.visible_child_name = 'chart';
             // GTK 4 does not grow a mapped window on its own. A side the
-            // user made larger stays so.
+            // user made larger stays so. The default size follows the
+            // user's resizes but not a maximize, unlike get_width().
             if (grows(size, [width, height])) {
                 const [, natural] = view.get_preferred_size();
-                window.set_default_size(Math.max(natural.width, window.get_width()),
-                    Math.max(natural.height, window.get_height()));
+                const [userWidth, userHeight] = window.get_default_size();
+                window.set_default_size(Math.max(natural.width, userWidth),
+                    Math.max(natural.height, userHeight));
             }
             size = [width, height];
         } catch (e) {
