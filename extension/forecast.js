@@ -200,12 +200,20 @@ export function buildForecast(quota, status, nowMs, {days = 7, stepMs = STEPS['3
 
     const accounts = quota.accounts.map((account, i) => {
         const s = sims[i];
-        // Only a cap that hides Fable room is worth naming.
-        const hidden = s.live && s.known && first[i].use < limit && s.blockedUntil > nowMs;
+        // A cap is worth naming when it hides Fable room, or when it keeps
+        // the account out past the next Fable reset.
+        const hidden = s.live && s.known && s.blockedUntil > nowMs &&
+            (first[i].use < limit || (first[i].resetAt != null && s.blockedUntil > first[i].resetAt));
+        let state = null;
+        if (account.disabled)
+            state = 'disabled';
+        else if (!s.live)
+            state = 'error';
         return {
             name: account.name,
             short: s.short,
             known: s.known,
+            state,
             use: first[i].use,
             resetAt: first[i].resetAt,
             blocked: hidden ? {window: s.blockedBy, until: Number.isFinite(s.blockedUntil) ? s.blockedUntil : null} : null,
@@ -223,6 +231,7 @@ export function buildForecast(quota, status, nowMs, {days = 7, stepMs = STEPS['3
         threshold: limit,
         strong: STRONG,
         demandPerHour: demand,
+        // Hours one account lasts: average tier weight x threshold / demand.
         hoursPerAccount: demand > 0 ? weight * limit / demand : null,
         columns,
         accounts,

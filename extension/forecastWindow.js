@@ -22,6 +22,10 @@ if (!GLib.getenv('DISPLAY') && !GLib.getenv('WAYLAND_DISPLAY')) {
     printerr('no display: the forecast window needs a desktop session');
     System.exit(2);
 }
+// Under `ssh -X` only DISPLAY is set, and GTK would still try wayland-0 first.
+// The imports above do not open a display yet, so this still applies.
+if (!GLib.getenv('WAYLAND_DISPLAY'))
+    GLib.setenv('GDK_BACKEND', 'x11', true);
 
 function openWindow(app) {
     const session = newSession();
@@ -54,6 +58,8 @@ function openWindow(app) {
     const refresh = async () => {
         try {
             const [quota, status] = await getFleet(path => getJson(session, path, cancellable));
+            if (cancellable.is_cancelled())
+                return;
             const next = buildForecast(quota, status, Date.now());
             if (next.error)
                 throw new Error(next.error);
@@ -63,10 +69,12 @@ function openWindow(app) {
             area.set_content_height(height);
             area.queue_draw();
             stack.visible_child_name = 'chart';
-            // GTK 4 does not grow a mapped window on its own.
+            // GTK 4 does not grow a mapped window on its own. A side the
+            // user made larger stays so.
             if (grows(size, [width, height])) {
                 const [, natural] = view.get_preferred_size();
-                window.set_default_size(natural.width, natural.height);
+                window.set_default_size(Math.max(natural.width, window.get_width()),
+                    Math.max(natural.height, window.get_height()));
             }
             size = [width, height];
         } catch (e) {

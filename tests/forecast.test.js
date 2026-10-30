@@ -47,6 +47,9 @@ test('a Fable reset makes an account available at its exact time', () => {
     // Off the 15 min grid too.
     const offGrid = forecast([account('me@one.example', 1, NOW + 10 * HOUR + 7 * MIN), TWO_CAPPED[1]]);
     assert.equal(offGrid.changes[1].at, NOW + 10 * HOUR + 7 * MIN);
+    // Over 14 days the demand fills both, then one.example resets a second time.
+    const long = buildForecast(quotaOf(TWO_CAPPED), STATUS, NOW, {days: 14, stepMs: 6 * HOUR});
+    assert.ok(long.changes.some(c => c.at === NOW + 10 * HOUR + 7 * DAY && c.accounts.includes('one.example')));
 });
 
 test('a window whose reset passed has rolled over', () => {
@@ -121,7 +124,16 @@ test('a capped 7d window blocks Fable until its reset, and says so', () => {
         account('me@two.example', 1, NOW + 5 * DAY),
     ]);
     assert.equal(later.changes[0].until, NOW + 30 * HOUR);
-    assert.equal(row(later, 'one.example').blocked, null);
+    assert.deepEqual(row(later, 'one.example').blocked, {window: '7d', until: NOW + 30 * HOUR});
+    // 7d and 5h both capped: the later cap wins, either way round.
+    for (const [week, five, window, until] of [[5, 8, '5h', 8], [8, 5, '7d', 8]]) {
+        const both = forecast([
+            account('me@one.example', 0.2, NOW + 5 * DAY, {caps: {week: [1, NOW + week * HOUR], five: [1, NOW + five * HOUR]}}),
+            account('me@two.example', 1, NOW + 5 * DAY),
+        ]);
+        assert.equal(row(both, 'one.example').blocked.window, window);
+        assert.equal(both.changes[0].until, NOW + until * HOUR);
+    }
 });
 
 test('a capped 5h window ends at its reset', () => {
@@ -132,6 +144,12 @@ test('a capped 5h window ends at its reset', () => {
     assert.equal(f.changes[0].until, NOW + 90 * MIN);
     assert.equal(f.changes[1].level, 'amber');
     assert.deepEqual(row(f, 'one.example').blocked, {window: '5h', until: NOW + 90 * MIN});
+    // A cap with no reset time keeps the account out over the horizon.
+    const open = account('me@one.example', 0.2, NOW + 5 * DAY);
+    open.buckets.fiveHour = bucket(1, null);
+    const endless = forecast([open, account('me@two.example', 1, NOW + 5 * DAY)]);
+    assert.deepEqual(row(endless, 'one.example').blocked, {window: '5h', until: null});
+    assert.ok(row(endless, 'one.example').cells.slice(5).every(c => c === 'out'));
 });
 
 test('a disabled account is never available; no Fable data gives none cells', () => {
@@ -141,13 +159,18 @@ test('a disabled account is never available; no Fable data gives none cells', ()
         account('me@three.example', null, null),
     ]);
     assert.deepEqual(levels(f), ['red']);
+    assert.equal(row(f, 'one.example').state, 'disabled');
+    assert.equal(row(f, 'two.example').state, null);
     assert.ok(row(f, 'one.example').cells.slice(5).every(c => c === 'out'));
+    const failing = forecast([account('me@one.example', 0, NOW + 5 * DAY, {status: 'error'}), TWO_CAPPED[1]]);
+    assert.equal(row(failing, 'one.example').state, 'error');
     assert.ok(row(f, 'three.example').cells.slice(5).every(c => c === 'none'));
     assert.equal(row(f, 'three.example').known, false);
 });
 
 test('cells: past before the column of now, then the worst state of each 3 h column', () => {
-    const f = forecast(TWO_CAPPED);
+    // In /quota order two, one: rows sort by next Fable reset.
+    const f = forecast([...TWO_CAPPED].reverse());
     // Columns start Fri 00:00; now (17:11) is inside column 5.
     assert.equal(f.columns.length, 56);
     assert.equal(f.start, NOW - (17 * HOUR + 11 * MIN));
