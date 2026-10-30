@@ -1,10 +1,17 @@
 # Changelog
 
-## Unreleased
+## 4 (2026-10-30)
 
 ### Added
 
 - README images rendered from a fictional fleet (`tests/demo.js`, `tests/headless.sh demo assets`). Why: a real screenshot shows real account addresses.
+- Fable forecast: when Fable comes back, account by account, over the next days. `tcg-forecast` prints it in a terminal (also over SSH, also as JSON); the menu item "Fable forecast" opens it in a window. Why: the gauge showed the next resets, not when the fleet would be usable again, and a reset account fills up again within hours.
+- `tests/headless.sh window DIR`: opens the forecast window from the menu in a headless Shell and saves screenshots.
+
+### Changed
+
+- `tests/headless.sh` loads the extension of its own checkout, with throwaway data, bin and cache dirs. Why: it tested the installed copy, and its live-load mode wrote to the real install.
+- The teamclaude client moved to `extension/api.js`. Why: the panel, the command and the window share it.
 
 ## 3 (2026-10-23)
 
