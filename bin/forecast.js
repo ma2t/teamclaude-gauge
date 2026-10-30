@@ -19,9 +19,9 @@ function parse(args) {
             options.json = true;
         else if (args[i] === '--window')
             options.window = true;
-        else if (args[i] === '--days')
+        else if (args[i] === '--days' && /^\d+$/.test(args[i + 1] ?? ''))
             options.days = Number(args[++i]);
-        else if (args[i] === '--step')
+        else if (args[i] === '--step' && i + 1 < args.length)
             options.step = args[++i];
         else
             return null;

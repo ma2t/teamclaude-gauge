@@ -4,6 +4,7 @@
 // The window reads the real proxy, so the PNGs hold real account names:
 // keep them out of the repo.
 
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
@@ -32,9 +33,13 @@ export async function run() {
     Main.overview.hide();
     colorScheme('prefer-dark');
     await Scripting.sleep(2000);
-    Main.extensionManager.lookup(UUID).stateObj._indicator._openForecast();
-    await Scripting.sleep(6000); // gjs start, GTK init, first fetch
-    const open = global.get_window_actors().some(actor => actor.meta_window.get_title() === 'Fable forecast');
+    const item = Main.extensionManager.lookup(UUID).stateObj._indicator._forecast;
+    let open = false;
+    if (item.visible) {
+        item.activate(Clutter.get_current_event());
+        await Scripting.sleep(6000); // gjs start, GTK init, first fetch
+        open = global.get_window_actors().some(actor => actor.meta_window.get_title() === 'Fable forecast');
+    }
     GLib.file_set_contents(GLib.getenv('TCG_RESULT'), `window: ${open ? 'present' : 'absent'}\n`);
     await shot('window.png');
 

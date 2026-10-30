@@ -3,7 +3,7 @@
 # dconf and runtime dir keep it away from the real session.
 #
 # Usage:
-#   tests/headless.sh             the Shell loads the installed extension at
+#   tests/headless.sh             the Shell loads this checkout's extension/ at
 #                                 startup; exit 0 when it reports it ACTIVE
 #   tests/headless.sh shots DIR   same, plus panel, menu and accounts
 #                                 screenshots in the dark and light theme
@@ -59,8 +59,13 @@ case "$mode" in
         gjs -m "$here/forecast-shot.js" "$TCG_SHOT_DIR" dark
         ;;
     window)
-        mkdir -p "${2:?usage: tests/headless.sh window DIR}"
-        export TCG_SHOT_DIR="$(realpath "$2")" TCG_RESULT="$work/result"
+        shots="$(realpath -m "${2:?usage: tests/headless.sh window DIR}")"
+        if [[ "$shots/" == "$(dirname "$here")/"* ]]; then
+            echo "window DIR must be outside the repo: the PNGs hold real account names" >&2
+            exit 2
+        fi
+        mkdir -p "$shots"
+        export TCG_SHOT_DIR="$shots" TCG_RESULT="$work/result"
         script="$here/window-shot.js"
         ;;
     live-load)

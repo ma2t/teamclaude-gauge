@@ -15,12 +15,14 @@ const FILES = {dark: 'forecast.png', light: 'forecast-light.png'};
 
 const [dir, ...asked] = System.programArgs;
 const themes = asked.length > 0 ? asked : Object.keys(FILES);
-if (!dir || !themes.every(theme => theme in FILES)) {
+if (!dir || !GLib.file_test(dir, GLib.FileTest.IS_DIR) || !themes.every(theme => theme in FILES)) {
     printerr('usage: gjs -m tests/forecast-shot.js DIR [dark] [light]');
     System.exit(2);
 }
 
-const now = Date.now();
+// Today 14:10, whatever the hour of the build: the README image always shows
+// past cells, and a rebuild changes only the dates.
+const now = new Date().setHours(14, 10, 0, 0);
 const {quota, status} = demoFleet(now);
 const forecast = buildForecast(quota, status, now);
 const [width, height] = chartSize(forecast);
